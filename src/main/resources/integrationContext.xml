@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:int="http://www.springframework.org/schema/integration"
+       xmlns:int-http="http://www.springframework.org/schema/integration/http"
+       xmlns:int-mail="http://www.springframework.org/schema/integration/mail"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xmlns:int-jms="http://www.springframework.org/schema/integration/jms"
+       xmlns:stream="http://www.springframework.org/schema/integration/stream"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd
+		http://www.springframework.org/schema/integration/http http://www.springframework.org/schema/integration/http/spring-integration-http.xsd
+        http://www.springframework.org/schema/integration/mail
+        http://www.springframework.org/schema/integration/mail/spring-integration-mail.xsd
+        http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd
+        http://www.springframework.org/schema/integration/jms http://www.springframework.org/schema/integration/jms/spring-integration-jms.xsd http://www.springframework.org/schema/integration/stream http://www.springframework.org/schema/integration/stream/spring-integration-stream.xsd">
+
+    <!--
+        Configuration for making environment variables/properties file referenceable in XML
+    -->
+
+    <bean id="properties" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+        <property name="locations">
+            <list>
+                <value>classpath:application.properties</value>
+            </list>
+        </property>
+        <property name="ignoreResourceNotFound" value="true" />
+        <property name="ignoreUnresolvablePlaceholders" value="true" />
+        <property name="systemPropertiesModeName" value="SYSTEM_PROPERTIES_MODE_OVERRIDE" />
+        <property name="searchSystemEnvironment" value="true" />
+    </bean>
+
+    <int:channel id="smtpApplicationChannel"/>
+
+    <!--<int-jms:message-driven-channel-adapter connection-factory="activeMQConnectionFactory"
+            destination-name="smtp" channel="smtpMessageChannel" pub-sub-domain="true"
+            error-channel="errorChannel"/>
+
+    <int:channel id="smtpApplicationChannel" />-->
+
+    <!--<int:chain input-channel="smtpMessageChannel">
+
+        <int:json-to-object-transformer type="java.util.HashMap" />
+
+        <int:filter expression="payload.get('post').get('thread').get('siteType').equals('news')" />
+
+        <int:map-to-object-transformer id="com.service.smtp.model.MessageQueueServiceData" />
+
+        <int:outbound-channel-adapter id="smtpApplicationChannel" ref="smtpApplicationChannel"/>
+
+    </int:chain>-->
+
+    <stream:stdout-channel-adapter channel="errorChannel" append-newline="true"/>
+
+</beans>
