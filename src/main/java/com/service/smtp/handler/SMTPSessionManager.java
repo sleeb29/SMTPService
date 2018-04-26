@@ -1,5 +1,8 @@
 package com.service.smtp.handler;
 
+import com.service.smtp.configuration.SMTPConfig;
+import org.springframework.beans.factory.annotation.Autowired;
+
 import javax.mail.*;
 import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;
@@ -12,13 +15,16 @@ public final class SMTPSessionManager {
     private Session session;
     private SMTPTransportPool smtpTransportPool;
 
+    private String senderEmailAddress;
+
     private static class SMTPSessionManagerInstanceHolder {
 
+        public static SMTPConfig smtpConfig;
         private static SMTPSessionManager instance = null;
 
         static {
             try {
-                instance = new SMTPSessionManager();
+                instance = new SMTPSessionManager(smtpConfig);
             } catch (MessagingException e) {
                 e.printStackTrace();
             }
@@ -84,7 +90,7 @@ public final class SMTPSessionManager {
 
         }
 
-        private void returnTransportToPool(TransportWrapper transportWrapper) throws MessagingException {
+        private void returnTransportToPool(TransportWrapper transportWrapper) {
             transportWrapper.lock.unlock();
         }
 
@@ -99,28 +105,34 @@ public final class SMTPSessionManager {
 
     }
 
-    private SMTPSessionManager() throws MessagingException {
+    private SMTPSessionManager(SMTPConfig smtpConfig) throws MessagingException {
+
+        this.senderEmailAddress = smtpConfig.getSenderEmailAddress();
 
         Properties mailSessionProperties = new Properties();
         mailSessionProperties.setProperty("mail.transport.protocol", "smtp");
-        mailSessionProperties.setProperty("mail.smtp.host", "localhost");//"smtp.gmail.com");
+        mailSessionProperties.setProperty("mail.smtp.host", smtpConfig.getEmailHost());
         mailSessionProperties.setProperty("mail.smtp.auth", "true");
-        //mailSessionProperties.setProperty("mail.smtp.starttls.enable", "true");
-        //mailSessionProperties.setProperty("mail.smtp.socketFactory.port", "9000");//"587");
-        //mailSessionProperties.setProperty("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
-        mailSessionProperties.setProperty("mail.smtp.port", "9000");//"587");
+        mailSessionProperties.setProperty("mail.smtp.starttls.enable", "true");
+        mailSessionProperties.setProperty("mail.smtp.socketFactory.port", smtpConfig.getEmailPort());
+        mailSessionProperties.setProperty("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
+        mailSessionProperties.setProperty("mail.smtp.port", smtpConfig.getEmailPort());
 
         this.session = Session.getInstance(mailSessionProperties, new Authenticator() {
-            // Set the account information session，transport will send mail
             @Override
             protected PasswordAuthentication getPasswordAuthentication() {
-                return new PasswordAuthentication("x@gmail.com", "x!");
+                return new PasswordAuthentication(senderEmailAddress,
+                        smtpConfig.getSenderPassword());
             }
         });
 
-        this.session.setDebug(false);
         this.smtpTransportPool = new SMTPTransportPool(this.session);
 
+    }
+
+    public static SMTPSessionManager init(SMTPConfig smtpConfig){
+        smtpConfig = smtpConfig;
+        return SMTPSessionManagerInstanceHolder.instance;
     }
 
     public static SMTPSessionManager getInstance(){
@@ -131,7 +143,7 @@ public final class SMTPSessionManager {
 
         SMTPTransportPool.TransportWrapper transportWrapper = this.smtpTransportPool.getTransport();
         transportWrapper.transport.sendMessage(message, addresses);
-
+        SMTPSessionManagerInstanceHolder.instance.smtpTransportPool.returnTransportToPool(transportWrapper);
     }
 
     public void cleanup() throws MessagingException {
@@ -144,5 +156,13 @@ public final class SMTPSessionManager {
 
     public void setSession(Session session) {
         this.session = session;
+    }
+
+    public String getSenderEmailAddress() {
+        return senderEmailAddress;
+    }
+
+    public void setSenderEmailAddress(String senderEmailAddress) {
+        this.senderEmailAddress = senderEmailAddress;
     }
 }

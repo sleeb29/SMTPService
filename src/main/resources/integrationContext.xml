@@ -2,17 +2,10 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xmlns:int="http://www.springframework.org/schema/integration"
-       xmlns:int-http="http://www.springframework.org/schema/integration/http"
-       xmlns:int-mail="http://www.springframework.org/schema/integration/mail"
-       xmlns:util="http://www.springframework.org/schema/util"
        xmlns:int-jms="http://www.springframework.org/schema/integration/jms"
        xmlns:stream="http://www.springframework.org/schema/integration/stream"
        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
 		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd
-		http://www.springframework.org/schema/integration/http http://www.springframework.org/schema/integration/http/spring-integration-http.xsd
-        http://www.springframework.org/schema/integration/mail
-        http://www.springframework.org/schema/integration/mail/spring-integration-mail.xsd
-        http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd
         http://www.springframework.org/schema/integration/jms http://www.springframework.org/schema/integration/jms/spring-integration-jms.xsd http://www.springframework.org/schema/integration/stream http://www.springframework.org/schema/integration/stream/spring-integration-stream.xsd">
 
     <!--
@@ -31,26 +24,31 @@
         <property name="searchSystemEnvironment" value="true" />
     </bean>
 
+    <bean id="smtpConfig" class="com.service.smtp.configuration.SMTPConfig">
+        <property name="senderEmailAddress" value="${application.email_sender}"/>
+        <property name="senderPassword" value="${application.email_password}"/>
+        <property name="emailHost" value="${application.email_host}"/>
+        <property name="emailPort" value="${application.email_port}"/>
+    </bean>
+
     <int:channel id="smtpApplicationChannel"/>
 
-    <!--<int-jms:message-driven-channel-adapter connection-factory="activeMQConnectionFactory"
+    <int-jms:message-driven-channel-adapter connection-factory="activeMQConnectionFactory"
             destination-name="smtp" channel="smtpMessageChannel" pub-sub-domain="true"
             error-channel="errorChannel"/>
 
-    <int:channel id="smtpApplicationChannel" />-->
+    <int:chain input-channel="smtpMessageChannel">
 
-    <!--<int:chain input-channel="smtpMessageChannel">
+        <int:json-to-object-transformer type="com.service.smtp.model.MessageQueueServiceData" />
 
-        <int:json-to-object-transformer type="java.util.HashMap" />
+        <int:filter expression="payload.post.siteType != null &amp;&amp; payload.post.siteType.equals('news')" />
 
-        <int:filter expression="payload.get('post').get('thread').get('siteType').equals('news')" />
+        <int:outbound-channel-adapter id="smtpApplicationChannel" ref="handlerBean"/>
 
-        <int:map-to-object-transformer id="com.service.smtp.model.MessageQueueServiceData" />
-
-        <int:outbound-channel-adapter id="smtpApplicationChannel" ref="smtpApplicationChannel"/>
-
-    </int:chain>-->
+    </int:chain>
 
     <stream:stdout-channel-adapter channel="errorChannel" append-newline="true"/>
+
+    <bean id="handlerBean" class="com.service.smtp.handler.SMTPMessageHandler" />
 
 </beans>

@@ -1,15 +1,17 @@
 package com.service.smtp;
 
-import com.service.smtp.handler.SMTPMessageHandler;
+import com.service.smtp.configuration.SMTPConfig;
+import com.service.smtp.handler.SMTPSessionManager;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.config.PropertyPlaceholderConfigurer;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
-import org.springframework.integration.channel.DirectChannel;
-import org.springframework.messaging.MessageHandler;
+
+import java.util.Properties;
 
 @SpringBootApplication
-@ComponentScan({"com.service.smtp.configuration"})
 public class SmtpApplication {
 
 	public static void main(String[] args) {
@@ -17,13 +19,13 @@ public class SmtpApplication {
 		SpringApplication.run(SmtpApplication.class, args);
 
 		ClassPathXmlApplicationContext context =
-				new ClassPathXmlApplicationContext(new String[] {"messageConsumerContext.xml",
-						"integrationContext.xml",
-				        "smtpContext.xml"});
+				new ClassPathXmlApplicationContext(new String[] {
+				        "messageConsumerContext.xml",
+						"integrationContext.xml"
+				});
 
-		DirectChannel smtpApplicationChannel = (DirectChannel) context.getBean("smtpApplicationChannel");
-		MessageHandler messageHandler = new SMTPMessageHandler();
-		smtpApplicationChannel.subscribe(messageHandler);
+		SMTPConfig smtpConfig = (SMTPConfig) context.getBean("smtpConfig");
+        SMTPSessionManager.init(smtpConfig);
 
 	}
 }

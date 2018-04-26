@@ -1,7 +1,11 @@
 package com.service.smtp.model;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.service.smtp.handler.MessageQueueServiceDataDeserializer;
+
 import java.util.Set;
 
+@JsonDeserialize(using = MessageQueueServiceDataDeserializer.class)
 public class MessageQueueServiceData {
 
     String service;

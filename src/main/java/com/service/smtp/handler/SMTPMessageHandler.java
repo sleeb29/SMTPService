@@ -5,15 +5,14 @@ import org.springframework.messaging.MessageHandler;
 import org.springframework.messaging.MessagingException;
 
 import javax.mail.Address;
-import javax.mail.event.TransportEvent;
-import javax.mail.event.TransportListener;
 import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
-import java.util.ArrayList;
 import java.util.Set;
 
 public class SMTPMessageHandler implements MessageHandler {
+
+    private String emailTextType = "text/plain";
 
     @Override
     public void handleMessage(org.springframework.messaging.Message<?> message) throws MessagingException {
@@ -39,14 +38,10 @@ public class SMTPMessageHandler implements MessageHandler {
         try {
 
             smtpMessage.setSubject(messageQueueServiceData.getPost().getTitle());
-            smtpMessage.setContent(messageQueueServiceData.getPost().getText(),"text/plain");
-            smtpMessage.setFrom(new InternetAddress("smtpleeb@gmail.com"));
+            smtpMessage.setContent(messageQueueServiceData.getPost().getText(),emailTextType);
+            smtpMessage.setFrom(new InternetAddress(smtpSessionManager.getSenderEmailAddress()));
             smtpMessage.addRecipients(javax.mail.Message.RecipientType.BCC, recipients);
             smtpSessionManager.sendMessage(smtpMessage, recipients);
-            smtpSessionManager.sendMessage(smtpMessage, recipients);
-
-            System.out.println("In thread: " + java.lang.Thread.currentThread() + ": " +
-                    messageQueueServiceData.getPost().getTitle());
 
         } catch (javax.mail.MessagingException e) {
             e.printStackTrace();
